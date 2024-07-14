@@ -15,23 +15,25 @@ pub fn main() !void {
 
     const file = try std.fs.cwd().openFile(file_path, .{});
     defer file.close();
-    var line_count: u64 = 0;
-    const delimiter = [_]u8{'\n'};
-
+    var delimiter = [_]u8{'\n'};
     var buf_reader = std.io.bufferedReader(file.reader());
 
-    var buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
-    while (true) {
-        const number_of_read_bytes = try buf_reader.read(&buffer);
+    var line_count: u64 = 0;
+    var buffer: [1024 * 3]u8 = undefined;
 
-        if (number_of_read_bytes == 0) {
-            break; // No more data
-        }
-        const number_of_lines = std.mem.count(u8, buffer[0..number_of_read_bytes], &delimiter);
-        line_count += number_of_lines;
-    }
-    std.debug.print("finished reading\n", .{});
+    line_count = try read_file(&buf_reader, &buffer, &delimiter);
     std.debug.print("Line count: {d}\n", .{line_count});
 }
 
-test "simple test" {}
+pub fn read_file(buffer_reader: anytype, buffer: []u8, delimiter: []u8) anyerror!u64 {
+    var number_of_lines: u64 = 0;
+    while (true) {
+        const number_of_read_bytes = try buffer_reader.read(buffer);
+        if (number_of_read_bytes == 0) {
+            break;
+        }
+
+        number_of_lines += std.mem.count(u8, buffer[0..number_of_read_bytes], delimiter);
+    }
+    return number_of_lines;
+}
